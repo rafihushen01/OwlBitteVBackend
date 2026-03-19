@@ -1,8 +1,10 @@
 import express from "express"
-import { completesignup, requestsignupotp, verifysignupotp } from "../controllers/Authcontroller.js"
+import { completesignup, loginStep1, loginVerifyOtp, requestsignupotp, verifysignupotp } from "../controllers/Authcontroller.js"
 const router=express.Router()
 router.post("/requestsignupotp",requestsignupotp)
 router.post("/verifysignupotp",verifysignupotp)
-router.post("/compeletesignup",completesignup)
+router.post("/completesignup",completesignup)
+router.post("/requestloginotp",loginStep1)
+router.post("/completelogin",loginVerifyOtp)
 
 export default router

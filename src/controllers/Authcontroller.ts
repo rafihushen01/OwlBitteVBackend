@@ -13,7 +13,7 @@ import {
   getSignupOtp,
   deleteSignupOtp,
 } from "../utils/otpStore.js";
-import { sendSignupOtp } from "../utils/mail.js";
+import { sendSigninOtp, sendSignupOtp } from "../utils/mail.js";
 import { generateTokens, hashToken } from "../utils/token.js";
 
 const generateotp = (): string =>
@@ -166,3 +166,120 @@ export const completesignup = TryCatch(
     });
   }
 );
+export const loginStep1 = TryCatch(async (req: Request, res: Response) => {
+  const { email, password } = sanitize(req.body);
+
+  const existingUser = await user.findOne({ email });
+
+  if (!existingUser) {
+    return res.status(400).json({ message: "Invalid credentials" });
+  }
+
+  // 🔒 BLOCK CHECK
+  if (existingUser.isblocked) {
+    return res.status(403).json({ message: "Account blocked" });
+  }
+
+  // 🔒 LOCK CHECK
+  if (existingUser.isLocked()) {
+    return res.status(403).json({ message: "Too many attempts. Try later." });
+  }
+
+  // 🔑 PASSWORD CHECK
+  const isMatch = await bcrypt.compare(password, existingUser.password);
+
+  if (!isMatch) {
+    existingUser.loginattempts = (existingUser.loginattempts || 0) + 1;
+
+    // 🚫 LOCK AFTER 13 ATTEMPTS
+    if (existingUser.loginattempts >= 13) {
+      existingUser.lockuntil = new Date(Date.now() + 30 * 60 * 1000); // 30 min
+    }
+
+    await existingUser.save();
+
+    return res.status(400).json({ message: "Invalid credentials" });
+  }
+
+  // ✅ RESET ATTEMPTS
+  existingUser.loginattempts = 0;
+  existingUser.lockuntil = undefined;
+
+  // 🔥 GENERATE OTP
+  const otp = generateotp();
+
+  existingUser.signinotp = await bcrypt.hash(otp, 10);
+  existingUser.signinotpexpires = new Date(Date.now() + 5 * 60 * 1000);
+  existingUser.signinattempts = 0;
+
+  await existingUser.save();
+
+  await sendSigninOtp(email, otp);
+
+  return res.json({
+    success: true,
+    message: "OTP sent",
+  });
+});
+export const loginVerifyOtp = TryCatch(async (req: Request, res: Response) => {
+  const { email, otp } = sanitize(req.body);
+
+  const existingUser = await user.findOne({ email });
+
+  if (!existingUser || !existingUser.signinotp) {
+    return res.status(400).json({ message: "Session expired" });
+  }
+
+  // ⏰ EXPIRE CHECK
+  if (existingUser.signinotpexpires! < new Date()) {
+    return res.status(400).json({ message: "OTP expired" });
+  }
+
+  // 🚫 OTP ATTEMPTS LIMIT
+  existingUser.signinattempts = (existingUser.signinattempts || 0) + 1;
+
+  if (existingUser.signinattempts > 5) {
+    await existingUser.save();
+    return res.status(429).json({ message: "Too many OTP attempts" });
+  }
+
+  // 🔑 COMPARE HASHED OTP
+  const isOtpValid = await bcrypt.compare(otp, existingUser.signinotp);
+
+  if (!isOtpValid) {
+    await existingUser.save();
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  // ✅ CLEAR OTP (VERY IMPORTANT)
+  existingUser.signinotp = undefined;
+  existingUser.signinotpexpires = undefined;
+  existingUser.signinattempts = 0;
+
+  // 🔥 TOKENS
+  const { accesstoken, refreshtoken } = generateTokens(
+    existingUser._id.toString()
+  );
+
+  existingUser.refreshtoken = hashToken(refreshtoken);
+
+  await existingUser.save();
+
+  // 🍪 COOKIES
+  res.cookie("accesstoken", accesstoken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+  });
+
+  res.cookie("refreshtoken", refreshtoken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+  });
+
+  return res.json({
+    success: true,
+    message: "Login successful",
+  });
+});

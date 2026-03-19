@@ -45,13 +45,13 @@ export interface IUser extends Document {
   signupotpexpires?: Date;
   signupattempts?: number;
 
-  signinotp?: string;
-  signinotpexpires?: Date;
+signinotp?: string | undefined;
+signinotpexpires?: Date | undefined;
   signinattempts?: number;
 
   // ANTI BRUTE FORCE
   loginattempts?: number;
-  lockuntil?: Date;
+  lockuntil?: Date |undefined;
 
   // DEVICE
   lastloginip?: string;
