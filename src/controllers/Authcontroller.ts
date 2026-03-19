@@ -18,7 +18,29 @@ import { generateTokens, hashToken } from "../utils/token.js";
 
 const generateotp = (): string =>
   crypto.randomInt(100000, 999999).toString();
+// const algorithm = "aes-256-cbc";
+// const key = crypto
+//   .createHash("sha256")
+//   .update(process.env.CRYPTO_SECRET!)
+//   .digest();
 
+// const iv = Buffer.alloc(16, 0); // static IV (ok for now, can improve later)
+
+// // 🔐 ENCRYPT
+// export const encrypt = (text: string) => {
+//   const cipher = crypto.createCipheriv(algorithm, key, iv);
+//   let encrypted = cipher.update(text, "utf8", "hex");
+//   encrypted += cipher.final("hex");
+//   return encrypted;
+// };
+
+// // 🔓 DECRYPT
+// export const decrypt = (encrypted: string) => {
+//   const decipher = crypto.createDecipheriv(algorithm, key, iv);
+//   let decrypted = decipher.update(encrypted, "hex", "utf8");
+//   decrypted += decipher.final("utf8");
+//   return decrypted;
+// };
 
 // ================= STEP 1: REQUEST OTP =================
 export const requestsignupotp = TryCatch(
@@ -118,6 +140,7 @@ export const completesignup = TryCatch(
     if (data.mobile) {
       userPayload.mobile = data.mobile;
     }
+    
 
     // ================= ADDRESS HANDLING =================
     if (address) {

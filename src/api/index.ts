@@ -95,9 +95,17 @@ app.use(
 
 // 🔐 Sanitize Mongo Queries
 app.use((req, _res, next) => {
-  req.body = sanitize(req.body);
-  req.query = sanitize(req.query);
-  req.params = sanitize(req.params);
+  if (req.body) req.body = sanitize(req.body);
+  if (req.params) req.params = sanitize(req.params);
+
+  // ❌ DO NOT overwrite req.query
+  // ✅ Instead mutate safely
+  if (req.query) {
+    for (const key in req.query) {
+      req.query[key] = sanitize(req.query[key]);
+    }
+  }
+
   next();
 });
 
@@ -154,7 +162,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     if (!res.headersSent) {
       res.status(408).json({ message: "Request Timeout" });
     }
-  }, 15000);
+  }, 60000);
 
   res.on("finish", () => clearTimeout(timeout));
   next();
