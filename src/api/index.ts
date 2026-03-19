@@ -11,7 +11,7 @@ import rateLimit from "express-rate-limit";
 import hpp from "hpp";
 import morgan from "morgan";
 import sanitize from "mongo-sanitize";
-
+import { globalZodMiddleware } from "../middlewares/globalZod.js";
 import authrouter from "../routers/authroute.js";
 
 dotenv.config();
@@ -140,6 +140,8 @@ app.use(
   })
 );
 
+
+
 /*
 =====================================================
  NO CACHE (REALTIME SYSTEM)
@@ -220,7 +222,7 @@ app.get("/health", (_req: Request, res: Response) => {
  ROUTES
 =====================================================
 */
-
+app.use(globalZodMiddleware())
 app.use("/api/auth", authrouter);
 
 /*
@@ -258,6 +260,4 @@ server.headersTimeout = 66000;
 
 const PORT = process.env.PORT || 8080;
 
-server.listen(PORT, () => {
-  console.log(`🚀 OwlBite running on ${PORT}`);
-});
+server.listen(PORT, () => console.log(`🚀 OwlBite running on ${PORT}`));
