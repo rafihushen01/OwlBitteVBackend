@@ -94,20 +94,7 @@ app.use(
 );
 
 // 🔐 Sanitize Mongo Queries
-app.use((req, _res, next) => {
-  if (req.body) req.body = sanitize(req.body);
-  if (req.params) req.params = sanitize(req.params);
 
-  // ❌ DO NOT overwrite req.query
-  // ✅ Instead mutate safely
-  if (req.query) {
-    for (const key in req.query) {
-      req.query[key] = sanitize(req.query[key]);
-    }
-  }
-
-  next();
-});
 
 /*
 =====================================================
