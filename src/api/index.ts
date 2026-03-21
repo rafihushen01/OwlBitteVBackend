@@ -13,7 +13,8 @@ import morgan from "morgan";
 import sanitize from "mongo-sanitize";
 import { globalZodMiddleware } from "../middlewares/globalZod.js";
 import authrouter from "../routers/authroute.js"
-
+import homebannerouter from "../routers/HomeBannerRouter.js"
+import navigationlinkrouter from "../routers/NavigationLinkRouter.js"
 dotenv.config();
 
 /*
@@ -211,7 +212,8 @@ app.get("/health", (_req: Request, res: Response) => {
 */
 app.use(globalZodMiddleware())
 app.use("/api/auth",authrouter)
-
+app.use("/api/homebanner",homebannerouter)
+app.use("/api/navigationlink",navigationlinkrouter)
 /*
 =====================================================
  GLOBAL ERROR HANDLER
